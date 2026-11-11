@@ -1,0 +1,222 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum PropertyCategory {
+  HOUSE
+  APARTMENT
+  VILLA
+  COMMERCIAL
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
+enum PricingMode {
+  TOTAL_ONLY
+  PER_SQM_ONLY
+  EXPLICIT_BOTH
+}
+
+enum EnquiryStatus {
+  NEW
+  CONTACTED
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum EnquiryType {
+  GENERAL
+  PROPERTY_ENQUIRY
+  VIEWING_REQUEST
+}
+
+enum ContactMethod {
+  PHONE
+  WHATSAPP
+  TELEGRAM
+  EMAIL
+}
+
+enum TimeSlot {
+  MORNING
+  AFTERNOON
+  EVENING
+}
+
+model User {
+  id               String      @id
+  name             String      @db.Text
+  email            String
+  emailVerified    Boolean     @default(false)
+  image            String?     @db.Text
+  role             UserRole    @default(USER)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  twoFactorEnabled Boolean?    @default(false)
+
+  sessions         Session[]
+  accounts         Account[]
+  twofactors       TwoFactor[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?  @db.Text
+  userAgent String?  @db.Text
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId(length: 191)])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String    @db.Text
+  providerId            String    @db.Text
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?   @db.Text
+  password              String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId(length: 191)])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String   @db.Text
+  value      String   @db.Text
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier(length: 191)])
+  @@map("verification")
+}
+
+model TwoFactor {
+  id                      String    @id
+  secret                  String    @db.Text
+  backupCodes             String    @db.Text
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified                Boolean   @default(false)
+  failedVerificationCount Int?      @default(0)
+  lockedUntil             DateTime?
+
+  @@index([userId(length: 191)])
+  @@map("twoFactor")
+}
+
+
+model Property {
+  id              String           @id @default(uuid())
+  title           String           @db.VarChar(200)
+  slug            String           @unique @db.VarChar(220)
+  description     String           @db.Text
+  category        PropertyCategory
+  status          PropertyStatus   @default(AVAILABLE)
+
+  subCity         String           @db.VarChar(100)
+  neighbourhood   String           @db.VarChar(150)
+  publicLat       Float?
+  publicLng       Float?
+  privateAddress  String?          @db.Text
+
+  areaSqm         Decimal?         @db.Decimal(10, 2)
+  bedrooms        Int?
+  bathrooms       Int?
+  parkingSpaces   Int?
+
+  pricingMode     PricingMode      @default(TOTAL_ONLY)
+  pricePerSqm     Decimal?         @db.Decimal(14, 2)
+  totalPrice      Decimal?         @db.Decimal(14, 2)
+
+  isFeatured      Boolean          @default(false)
+  isPublished     Boolean          @default(false)
+
+  deletedAt       DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  images          PropertyImage[]
+  enquiries       Enquiry[]
+
+  @@index([category, status, isPublished])
+  @@index([subCity])
+  @@index([totalPrice])
+  @@index([deletedAt])
+}
+
+model PropertyImage {
+  id           String   @id @default(uuid())
+  propertyId   String
+  cloudinaryId String   @db.VarChar(255)
+  url          String   @db.Text
+  altText      String?  @db.VarChar(255)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  property     Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId, displayOrder])
+}
+
+model Enquiry {
+  id                    String         @id @default(uuid())
+  type                  EnquiryType    @default(GENERAL)
+  propertyId            String?
+
+  fullName              String         @db.VarChar(150)
+  phone                 String         @db.VarChar(30)
+  email                 String?        @db.VarChar(191)
+  preferredContactMethod ContactMethod @default(PHONE)
+
+  message               String?        @db.Text
+
+  preferredDate         DateTime?
+  preferredTimeSlot     TimeSlot?
+
+  status                EnquiryStatus  @default(NEW)
+  adminNotes            String?        @db.Text
+
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  property              Property?      @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  @@index([status, createdAt])
+  @@index([propertyId])
+  @@index([type])
+}
