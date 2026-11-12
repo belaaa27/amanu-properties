@@ -4,6 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { Save } from "lucide-react";
 import { createProperty } from "../actions";
+import PropertyImageManager, {
+  ManagedPropertyImage,
+} from "../PropertyImageManager";
 
 const addisSubCities = [
   "Bole",
@@ -19,12 +22,14 @@ const addisSubCities = [
 ];
 
 export default function NewPropertyForm() {
+  const [title, setTitle] = useState("");
   const [pricingMode, setPricingMode] = useState<
     "TOTAL_ONLY" | "PER_SQM_ONLY" | "EXPLICIT_BOTH"
   >("TOTAL_ONLY");
   const [status, setStatus] = useState<"AVAILABLE" | "RESERVED" | "SOLD">(
     "AVAILABLE",
   );
+  const [images, setImages] = useState<ManagedPropertyImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,6 +39,8 @@ export default function NewPropertyForm() {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
+    formData.set("images", JSON.stringify(images));
+
     try {
       await createProperty(formData);
     } catch (err: unknown) {
@@ -67,6 +74,8 @@ export default function NewPropertyForm() {
               <input
                 type="text"
                 name="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 required
                 placeholder="e.g. Luxurious 4-Bedroom Villa in Bole Near Edna Mall"
                 className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500 text-slate-900 bg-slate-50/50"
@@ -333,6 +342,13 @@ export default function NewPropertyForm() {
             )}
           </div>
         </div>
+
+        {/* Property Image Management */}
+        <PropertyImageManager
+          initialImages={images}
+          propertyTitle={title}
+          onChange={setImages}
+        />
 
         {/* Publishing Options */}
         <div className="bg-white p-5 sm:p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">

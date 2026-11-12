@@ -6,6 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth";
 import { calculatePropertyPricing } from "@/lib/pricing";
+import { destroyCloudinaryAsset } from "@/lib/cloudinary";
 
 // Helper to treat empty form strings ("") as null instead of coercing "" -> 0
 const emptyToNull = (val: unknown) =>
@@ -22,6 +23,14 @@ const optionalNonNegativeInt = z.preprocess(
 );
 
 const optionalFloat = z.preprocess(emptyToNull, z.coerce.number().nullable());
+
+const imageItemSchema = z.object({
+  id: z.string().optional(),
+  cloudinaryId: z.string().min(1),
+  url: z.string().url(),
+  altText: z.string().optional().default(""),
+  isNewUpload: z.boolean().optional(),
+});
 
 // Zod validation schema for Property creation & editing
 const propertySchema = z
@@ -55,7 +64,7 @@ const propertySchema = z
     isFeatured: z.coerce.boolean().default(false),
     isPublished: z.coerce.boolean().default(false), // New properties unpublished by default
 
-    // Images (Cloudinary URLs or IDs passed as JSON or comma-separated strings)
+    // Serialized JSON array of ManagedPropertyImage items
     images: z.string().optional(),
   })
   .superRefine((data, ctx) => {
@@ -113,6 +122,29 @@ const propertySchema = z
     }
   });
 
+function parseSubmittedImages(rawImages?: string) {
+  if (!rawImages || rawImages.trim() === "") return [];
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(rawImages);
+  } catch {
+    throw new Error("Invalid property images payload.");
+  }
+
+  const validated = z.array(imageItemSchema).safeParse(parsedJson);
+  if (!validated.success) {
+    throw new Error("One or more property image entries are invalid.");
+  }
+
+  // Deduplicate by cloudinaryId while preserving administrator display order
+  const seen = new Set<string>();
+  return validated.data.filter((item) => {
+    if (seen.has(item.cloudinaryId)) return false;
+    seen.add(item.cloudinaryId);
+    return true;
+  });
+}
+
 function generateSlug(title: string): string {
   const clean = title
     .toLowerCase()
@@ -139,6 +171,7 @@ export async function createProperty(formData: FormData) {
   }
 
   const data = parsed.data;
+  const imageList = parseSubmittedImages(data.images);
 
   // Apply pricing rules validation & computation
   const computedPricing = calculatePropertyPricing({
@@ -150,47 +183,47 @@ export async function createProperty(formData: FormData) {
 
   const slug = generateSlug(data.title);
 
-  // Parse images if provided
-  let imageList: { url: string; cloudinaryId: string; altText?: string }[] = [];
-  if (data.images) {
-    try {
-      imageList = JSON.parse(data.images);
-    } catch {
-      // fallback if not JSON
-    }
-  }
-
-  await prisma.property.create({
-    data: {
-      title: data.title,
-      slug,
-      description: data.description,
-      category: data.category,
-      status: data.status,
-      subCity: data.subCity,
-      neighbourhood: data.neighbourhood,
-      privateAddress: data.privateAddress || null,
-      publicLat: data.publicLat || null,
-      publicLng: data.publicLng || null,
-      areaSqm: computedPricing.areaSqm,
-      bedrooms: data.bedrooms || null,
-      bathrooms: data.bathrooms || null,
-      parkingSpaces: data.parkingSpaces || null,
-      pricingMode: computedPricing.pricingMode,
-      pricePerSqm: computedPricing.pricePerSqm,
-      totalPrice: computedPricing.totalPrice,
-      isFeatured: data.isFeatured,
-      isPublished: data.isPublished,
-      images: {
-        create: imageList.map((img, idx) => ({
-          url: img.url,
-          cloudinaryId: img.cloudinaryId || `amanu_${Date.now()}_${idx}`,
-          altText: img.altText || data.title,
-          displayOrder: idx,
-        })),
+  try {
+    await prisma.property.create({
+      data: {
+        title: data.title,
+        slug,
+        description: data.description,
+        category: data.category,
+        status: data.status,
+        subCity: data.subCity,
+        neighbourhood: data.neighbourhood,
+        privateAddress: data.privateAddress || null,
+        publicLat: data.publicLat || null,
+        publicLng: data.publicLng || null,
+        areaSqm: computedPricing.areaSqm,
+        bedrooms: data.bedrooms || null,
+        bathrooms: data.bathrooms || null,
+        parkingSpaces: data.parkingSpaces || null,
+        pricingMode: computedPricing.pricingMode,
+        pricePerSqm: computedPricing.pricePerSqm,
+        totalPrice: computedPricing.totalPrice,
+        isFeatured: data.isFeatured,
+        isPublished: data.isPublished,
+        images: {
+          create: imageList.map((img, idx) => ({
+            url: img.url,
+            cloudinaryId: img.cloudinaryId,
+            altText: img.altText.trim() || data.title,
+            displayOrder: idx, // 0 === primary image
+          })),
+        },
       },
-    },
-  });
+    });
+  } catch (dbError) {
+    // Safe rollback: clean up newly uploaded Cloudinary images if MySQL persistence fails
+    await Promise.allSettled(
+      imageList
+        .filter((img) => img.isNewUpload)
+        .map((img) => destroyCloudinaryAsset(img.cloudinaryId)),
+    );
+    throw dbError;
+  }
 
   revalidatePath("/admin/properties");
   redirect("/admin/properties");
@@ -212,10 +245,16 @@ export async function updateProperty(id: string, formData: FormData) {
   }
 
   const data = parsed.data;
+  const submittedImages = parseSubmittedImages(data.images);
 
-  // Verify property exists and is not soft-deleted
+  // Verify property exists and is not soft-deleted, including owned images
   const existing = await prisma.property.findUnique({
     where: { id },
+    include: {
+      images: {
+        orderBy: { displayOrder: "asc" },
+      },
+    },
   });
 
   if (!existing || existing.deletedAt) {
@@ -229,29 +268,108 @@ export async function updateProperty(id: string, formData: FormData) {
     totalPrice: data.totalPrice,
   });
 
-  await prisma.property.update({
-    where: { id },
-    data: {
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      status: data.status,
-      subCity: data.subCity,
-      neighbourhood: data.neighbourhood,
-      privateAddress: data.privateAddress || null,
-      publicLat: data.publicLat || null,
-      publicLng: data.publicLng || null,
-      areaSqm: computedPricing.areaSqm,
-      bedrooms: data.bedrooms || null,
-      bathrooms: data.bathrooms || null,
-      parkingSpaces: data.parkingSpaces || null,
-      pricingMode: computedPricing.pricingMode,
-      pricePerSqm: computedPricing.pricePerSqm,
-      totalPrice: computedPricing.totalPrice,
-      isFeatured: data.isFeatured,
-      isPublished: data.isPublished,
-    },
-  });
+  // Determine which existing DB images were kept vs removed
+  const keptExistingIds = new Set(
+    submittedImages.filter((img) => img.id).map((img) => img.id as string),
+  );
+  const removedDbImages = existing.images.filter(
+    (img) => !keptExistingIds.has(img.id),
+  );
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 1. Update core property fields
+      await tx.property.update({
+        where: { id },
+        data: {
+          title: data.title,
+          description: data.description,
+          category: data.category,
+          status: data.status,
+          subCity: data.subCity,
+          neighbourhood: data.neighbourhood,
+          privateAddress: data.privateAddress || null,
+          publicLat: data.publicLat || null,
+          publicLng: data.publicLng || null,
+          areaSqm: computedPricing.areaSqm,
+          bedrooms: data.bedrooms || null,
+          bathrooms: data.bathrooms || null,
+          parkingSpaces: data.parkingSpaces || null,
+          pricingMode: computedPricing.pricingMode,
+          pricePerSqm: computedPricing.pricePerSqm,
+          totalPrice: computedPricing.totalPrice,
+          isFeatured: data.isFeatured,
+          isPublished: data.isPublished,
+        },
+      });
+
+      // 2. Delete removed image rows in DB (scoped strictly to propertyId: id)
+      if (removedDbImages.length > 0) {
+        await tx.propertyImage.deleteMany({
+          where: {
+            propertyId: id,
+            id: { in: removedDbImages.map((img) => img.id) },
+          },
+        });
+      }
+
+      // 3. Upsert / reorder kept images and create newly uploaded images
+      for (let idx = 0; idx < submittedImages.length; idx++) {
+        const item = submittedImages[idx];
+        const ownedExisting = item.id
+          ? existing.images.find((dbImg) => dbImg.id === item.id)
+          : undefined;
+
+        if (ownedExisting) {
+          await tx.propertyImage.update({
+            where: { id: ownedExisting.id },
+            data: {
+              displayOrder: idx, // 0 === primary image
+              altText: item.altText.trim() || data.title,
+            },
+          });
+        } else {
+          await tx.propertyImage.create({
+            data: {
+              propertyId: id,
+              cloudinaryId: item.cloudinaryId,
+              url: item.url,
+              altText: item.altText.trim() || data.title,
+              displayOrder: idx,
+            },
+          });
+        }
+      }
+    });
+  } catch (dbError) {
+    // Safe rollback: clean up only newly uploaded images from this failed update attempt
+    await Promise.allSettled(
+      submittedImages
+        .filter((img) => img.isNewUpload)
+        .map((img) => destroyCloudinaryAsset(img.cloudinaryId)),
+    );
+    throw dbError;
+  }
+
+  // 4. Only AFTER DB transaction succeeds, delete removed assets from Cloudinary.
+  // Never silently ignore Cloudinary deletion failures.
+  if (removedDbImages.length > 0) {
+    const deletionResults = await Promise.allSettled(
+      removedDbImages.map((img) => destroyCloudinaryAsset(img.cloudinaryId)),
+    );
+
+    const failedDeletions = deletionResults.filter(
+      (res): res is PromiseRejectedResult => res.status === "rejected",
+    );
+
+    if (failedDeletions.length > 0) {
+      revalidatePath("/admin/properties");
+      revalidatePath(`/admin/properties/${id}`);
+      throw new Error(
+        `Property updated in database, but ${failedDeletions.length} removed image(s) failed to delete from Cloudinary: ${failedDeletions[0].reason}`,
+      );
+    }
+  }
 
   revalidatePath("/admin/properties");
   revalidatePath(`/admin/properties/${id}`);
