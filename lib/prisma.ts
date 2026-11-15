@@ -22,6 +22,7 @@ function createPrismaClient() {
     database,
     port: Number(process.env.DATABASE_PORT ?? 3306),
     connectionLimit: 5,
+    ssl: process.env.DATABASE_SSL === "true" ? true : undefined,
   });
 
   return new PrismaClient({ adapter });
