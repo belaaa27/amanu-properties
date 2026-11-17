@@ -8,6 +8,12 @@ import { requireAdminSession } from "@/lib/auth";
 import { calculatePropertyPricing } from "@/lib/pricing";
 import { destroyCloudinaryAsset } from "@/lib/cloudinary";
 
+// Revalidate public pages affected by property changes.
+function revalidatePublicPropertyPages() {
+  revalidatePath("/");
+  revalidatePath("/properties");
+}
+
 // Helper to treat empty form strings ("") as null instead of coercing "" -> 0
 const emptyToNull = (val: unknown) =>
   val === "" || val === undefined || val === null ? null : val;
@@ -62,7 +68,7 @@ const propertySchema = z
 
     // Publishing & Feature Flags
     isFeatured: z.coerce.boolean().default(false),
-    isPublished: z.coerce.boolean().default(false), // New properties unpublished by default
+    isPublished: z.coerce.boolean().default(false),
 
     // Serialized JSON array of ManagedPropertyImage items
     images: z.string().optional(),
@@ -124,7 +130,9 @@ const propertySchema = z
 
 function parseSubmittedImages(rawImages?: string) {
   if (!rawImages || rawImages.trim() === "") return [];
+
   let parsedJson: unknown;
+
   try {
     parsedJson = JSON.parse(rawImages);
   } catch {
@@ -132,12 +140,14 @@ function parseSubmittedImages(rawImages?: string) {
   }
 
   const validated = z.array(imageItemSchema).safeParse(parsedJson);
+
   if (!validated.success) {
     throw new Error("One or more property image entries are invalid.");
   }
 
   // Deduplicate by cloudinaryId while preserving administrator display order
   const seen = new Set<string>();
+
   return validated.data.filter((item) => {
     if (seen.has(item.cloudinaryId)) return false;
     seen.add(item.cloudinaryId);
@@ -151,12 +161,15 @@ function generateSlug(title: string): string {
     .replace(/[^a-z0-9 ]/g, "")
     .trim()
     .replace(/\s+/g, "-");
+
   const randomSuffix = Math.random().toString(36).substring(2, 7);
+
   return `${clean}-${randomSuffix}`;
 }
 
 export async function createProperty(formData: FormData) {
   const session = await requireAdminSession();
+
   if (!session) {
     throw new Error("Unauthorized: Administrator access required.");
   }
@@ -210,7 +223,7 @@ export async function createProperty(formData: FormData) {
             url: img.url,
             cloudinaryId: img.cloudinaryId,
             altText: img.altText.trim() || data.title,
-            displayOrder: idx, // 0 === primary image
+            displayOrder: idx,
           })),
         },
       },
@@ -222,15 +235,19 @@ export async function createProperty(formData: FormData) {
         .filter((img) => img.isNewUpload)
         .map((img) => destroyCloudinaryAsset(img.cloudinaryId)),
     );
+
     throw dbError;
   }
 
   revalidatePath("/admin/properties");
+  revalidatePublicPropertyPages();
+
   redirect("/admin/properties");
 }
 
 export async function updateProperty(id: string, formData: FormData) {
   const session = await requireAdminSession();
+
   if (!session) {
     throw new Error("Unauthorized: Administrator access required.");
   }
@@ -272,6 +289,7 @@ export async function updateProperty(id: string, formData: FormData) {
   const keptExistingIds = new Set(
     submittedImages.filter((img) => img.id).map((img) => img.id as string),
   );
+
   const removedDbImages = existing.images.filter(
     (img) => !keptExistingIds.has(img.id),
   );
@@ -316,6 +334,7 @@ export async function updateProperty(id: string, formData: FormData) {
       // 3. Upsert / reorder kept images and create newly uploaded images
       for (let idx = 0; idx < submittedImages.length; idx++) {
         const item = submittedImages[idx];
+
         const ownedExisting = item.id
           ? existing.images.find((dbImg) => dbImg.id === item.id)
           : undefined;
@@ -324,7 +343,7 @@ export async function updateProperty(id: string, formData: FormData) {
           await tx.propertyImage.update({
             where: { id: ownedExisting.id },
             data: {
-              displayOrder: idx, // 0 === primary image
+              displayOrder: idx,
               altText: item.altText.trim() || data.title,
             },
           });
@@ -348,11 +367,11 @@ export async function updateProperty(id: string, formData: FormData) {
         .filter((img) => img.isNewUpload)
         .map((img) => destroyCloudinaryAsset(img.cloudinaryId)),
     );
+
     throw dbError;
   }
 
-  // 4. Only AFTER DB transaction succeeds, delete removed assets from Cloudinary.
-  // Never silently ignore Cloudinary deletion failures.
+  // Only AFTER DB transaction succeeds, delete removed assets from Cloudinary.
   if (removedDbImages.length > 0) {
     const deletionResults = await Promise.allSettled(
       removedDbImages.map((img) => destroyCloudinaryAsset(img.cloudinaryId)),
@@ -365,6 +384,8 @@ export async function updateProperty(id: string, formData: FormData) {
     if (failedDeletions.length > 0) {
       revalidatePath("/admin/properties");
       revalidatePath(`/admin/properties/${id}`);
+      revalidatePublicPropertyPages();
+
       throw new Error(
         `Property updated in database, but ${failedDeletions.length} removed image(s) failed to delete from Cloudinary: ${failedDeletions[0].reason}`,
       );
@@ -373,15 +394,21 @@ export async function updateProperty(id: string, formData: FormData) {
 
   revalidatePath("/admin/properties");
   revalidatePath(`/admin/properties/${id}`);
+  revalidatePublicPropertyPages();
+
   redirect("/admin/properties");
 }
 
 export async function togglePublishProperty(id: string, isPublished: boolean) {
   const session = await requireAdminSession();
+
   if (!session) throw new Error("Unauthorized");
 
   const property = await prisma.property.findUnique({ where: { id } });
-  if (!property || property.deletedAt) throw new Error("Property not found");
+
+  if (!property || property.deletedAt) {
+    throw new Error("Property not found");
+  }
 
   await prisma.property.update({
     where: { id },
@@ -389,6 +416,7 @@ export async function togglePublishProperty(id: string, isPublished: boolean) {
   });
 
   revalidatePath("/admin/properties");
+  revalidatePublicPropertyPages();
 }
 
 export async function updatePropertyStatus(
@@ -396,10 +424,14 @@ export async function updatePropertyStatus(
   status: "AVAILABLE" | "RESERVED" | "SOLD",
 ) {
   const session = await requireAdminSession();
+
   if (!session) throw new Error("Unauthorized");
 
   const property = await prisma.property.findUnique({ where: { id } });
-  if (!property || property.deletedAt) throw new Error("Property not found");
+
+  if (!property || property.deletedAt) {
+    throw new Error("Property not found");
+  }
 
   await prisma.property.update({
     where: { id },
@@ -407,22 +439,28 @@ export async function updatePropertyStatus(
   });
 
   revalidatePath("/admin/properties");
+  revalidatePublicPropertyPages();
 }
 
 export async function softDeleteProperty(id: string) {
   const session = await requireAdminSession();
+
   if (!session) throw new Error("Unauthorized");
 
   const property = await prisma.property.findUnique({ where: { id } });
-  if (!property) throw new Error("Property not found");
+
+  if (!property) {
+    throw new Error("Property not found");
+  }
 
   await prisma.property.update({
     where: { id },
     data: {
       deletedAt: new Date(),
-      isPublished: false, // Automatically unpublish upon deletion
+      isPublished: false,
     },
   });
 
   revalidatePath("/admin/properties");
+  revalidatePublicPropertyPages();
 }
