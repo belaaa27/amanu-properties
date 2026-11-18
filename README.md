@@ -1,68 +1,78 @@
 # Amanu Properties
 
-Amanu Properties is a real estate property discovery and sales enquiry platform for properties in Addis Ababa, Ethiopia.
+Amanu Properties is a full-stack real estate property discovery and sales enquiry platform designed for the Addis Ababa, Ethiopia market.
 
-The platform allows visitors to explore published property listings, review property details, and contact the business to make enquiries or request a viewing. An administrator can manage property listings, images, enquiries, and viewing requests through a protected dashboard.
+The platform enables visitors to explore property listings, review property details, submit enquiries, and request property viewings. Administrators can manage property listings, images, visitor enquiries, and viewing requests through a protected administration dashboard.
+
+## Live Project
+
+- **Live Website:** https://amanu-properties.vercel.app/
+- **GitHub Repository:** https://github.com/belaaa27/amanu-properties
+- **Deployment:** Vercel
 
 ## Features
 
-### Public website
+### Public Website
 
-- Homepage with featured property listings
-- Property browsing and listing pages
-- Property details and image galleries
-- Property category and location information
-- Property pricing display with supported pricing modes
-- About and Contact pages
-- General enquiries and property enquiries
-- Viewing requests
+- Responsive homepage with featured property listings.
+- Property browsing and listing pages.
+- Property detail pages and image galleries.
+- Property categories and location information.
+- Property pricing with multiple pricing modes.
+- About and Contact pages.
+- General and property-specific enquiries.
+- Property viewing requests.
 
-### Administration
+### Administration Dashboard
 
-- Protected administrator area
-- Property creation and editing
-- Property publishing and availability management
-- Featured property management
-- Property image management through Cloudinary
-- Enquiry and viewing-request management
-- Administrative settings
+- Protected administrator authentication.
+- Property creation, editing, and publishing.
+- Property availability management.
+- Featured property management.
+- Property image management through Cloudinary.
+- Visitor enquiry management.
+- Viewing request management.
+- Enquiry status updates and internal administrative notes.
+- Search, filtering, and pagination.
+- Dashboard statistics and recent enquiry overview.
+- Administrative settings and password management.
 
-### Property pricing
+### Property Pricing
 
 The application supports three pricing modes:
 
-- `TOTAL_ONLY` — display the total asking price.
-- `PER_SQM_ONLY` — display the price per square metre.
-- `EXPLICIT_BOTH` — display both values when both have been explicitly provided and approved.
+- `TOTAL_ONLY` — displays the total asking price.
+- `PER_SQM_ONLY` — displays the price per square metre.
+- `EXPLICIT_BOTH` — displays both values when both have been explicitly provided and approved.
 
-Prices are stored using Prisma Decimal fields to avoid relying on JavaScript floating-point arithmetic for monetary values.
+Prices use Prisma Decimal fields to avoid relying on JavaScript floating-point arithmetic for monetary values.
 
-## Technology stack
+## Technology Stack
 
-| Area              | Technology                |
-| ----------------- | ------------------------- |
-| Framework         | Next.js 16                |
-| UI                | React 19                  |
-| Language          | TypeScript                |
-| Styling           | Tailwind CSS 4            |
-| Database access   | Prisma ORM 7              |
-| Database          | MySQL-compatible database |
-| Database adapter  | Prisma MariaDB adapter    |
-| Authentication    | Better Auth               |
-| Image management  | Cloudinary                |
-| Icons             | Lucide React              |
-| Deployment target | Vercel                    |
+| Area             | Technology                                           |
+| ---------------- | ---------------------------------------------------- |
+| Framework        | Next.js 16                                           |
+| UI               | React 19                                             |
+| Language         | TypeScript                                           |
+| Styling          | Tailwind CSS 4                                       |
+| Database access  | Prisma ORM 7                                         |
+| Database         | TiDB Cloud (production), MariaDB (local development) |
+| Database adapter | Prisma MariaDB adapter                               |
+| Authentication   | Better Auth                                          |
+| Image management | Cloudinary                                           |
+| Icons            | Lucide React                                         |
+| Deployment       | Vercel                                               |
 
 ## Requirements
 
 Install the following before setting up the project:
 
-- Node.js (use a version compatible with the installed Next.js release)
-- npm
-- A running MySQL-compatible database
-- A Cloudinary account for property image management
+- Node.js compatible with the installed Next.js version.
+- npm.
+- A MySQL-compatible database.
+- A Cloudinary account for property image management.
 
-## Getting started
+## Getting Started
 
 ### 1. Clone the repository
 
@@ -81,9 +91,9 @@ npm install
 
 Create a local `.env` file in the project root using `.env.example` as a reference.
 
-Fill in the database connection details and the required authentication and Cloudinary configuration.
+Configure the required database, authentication, and Cloudinary environment variables.
 
-Never commit `.env` or share production credentials.
+Never commit `.env` files or expose production credentials.
 
 ### 4. Generate Prisma Client
 
@@ -101,7 +111,7 @@ npx prisma migrate dev
 
 The Prisma schema is located at `prisma/schema.prisma`, and migration files are stored in `prisma/migrations`.
 
-Do not use `prisma migrate reset` against a database containing data you need to preserve.
+Do not run development migration resets against databases containing data that must be preserved.
 
 ### 6. Start the development server
 
@@ -109,13 +119,9 @@ Do not use `prisma migrate reset` against a database containing data you need to
 npm run dev
 ```
 
-Open:
+Open http://localhost:3000 in your browser.
 
-```text
-http://localhost:3000
-```
-
-## Available commands
+## Available Commands
 
 | Command               | Purpose                      |
 | --------------------- | ---------------------------- |
@@ -127,45 +133,49 @@ http://localhost:3000
 | `npm run build`       | Create the production build  |
 | `npm run start`       | Start the production server  |
 
-## Database and production builds
+## Database and Deployment
 
-The public homepage retrieves property data from the database during static generation.
+The application uses Prisma ORM with a MariaDB-compatible database adapter.
 
-Therefore:
+- Local development uses MariaDB.
+- Production uses TiDB Cloud.
+- Keep local and production database configurations separate.
+- Configure the required environment variables in the deployment environment.
+- Apply committed production migrations using `npx prisma migrate deploy` when required.
+- Verify database connectivity and application functionality after deployment.
 
-- The database must be running and reachable when running `npm run build`.
-- The production build environment must have valid database connection configuration.
-- Production migrations should be applied before relying on the deployed application.
-- Use `npx prisma migrate deploy` for applying committed migrations in production, after configuring the production database connection.
+Never use development database reset commands against production data.
 
-Do not run development migration resets against production data.
-
-## Images
+## Image Management
 
 Property images are managed through Cloudinary.
 
-Use the administrator interface to add and manage listing images. Keep Cloudinary credentials in environment variables and never expose the API secret in client-side code or public repositories.
+Administrators can upload and manage listing images through the administration dashboard.
 
-## Business scope
+Cloudinary credentials must remain in server-side environment variables. Never expose the Cloudinary API secret in client-side code or public repositories.
 
-Amanu Properties is designed for property discovery, sales enquiries, and viewing requests.
+## Business Scope
 
-The platform does not provide rental management, tenant management, online property checkout, or multi-vendor marketplace functionality.
+Amanu Properties focuses on real estate discovery, property sales enquiries, and viewing requests.
 
-Only publish property information that has been verified and approved for public display. Keep private property addresses and other confidential information out of public listing content.
+The application does not currently provide rental management, tenant management, online property checkout, or multi-vendor marketplace functionality.
+
+Only publish property information that has been verified and approved for public display. Keep private property addresses and confidential enquiry information out of public listings.
+
+Any fictional property information used for demonstrations must be clearly identified as demo content until verified business information is available.
 
 ## Security
 
-- Keep `.env` out of version control.
+- Keep `.env` files out of version control.
 - Use strong administrator credentials.
-- Keep Cloudinary API secrets server-side.
 - Restrict administrative functionality to authorized administrators.
-- Do not publish private addresses or confidential enquiry information.
-- Do not commit database backups, credentials, or local development data.
+- Keep Cloudinary API secrets server-side.
+- Protect visitor enquiries and administrative information.
+- Never commit database backups, credentials, or local development data.
 
-## Quality checks before release
+## Quality Checks
 
-Run the following commands before committing or deploying:
+Run the following checks before committing or deploying changes:
 
 ```bash
 npx prisma validate
@@ -175,8 +185,14 @@ npm run lint
 npm run build
 ```
 
-Resolve errors before release. Review warnings and address them where appropriate.
+Resolve errors before release and review warnings where appropriate.
 
-## Project status
+## Project Status
 
-This repository contains the Amanu Properties application. Production configuration, database migrations, administrator access, and deployment settings must be configured for the target environment before launch.
+**Status: Completed and deployed.**
+
+The public website, administrator dashboard, property management, visitor enquiries, viewing requests, authentication, and production deployment have been implemented.
+
+The project is available at:
+
+https://amanu-properties.vercel.app/
