@@ -1,10 +1,15 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireAdminSession } from "@/lib/auth";
 import AdminClientLayout from "./components/AdminClientLayout";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Admin Portal | Amanu Properties",
   description: "Administrator management portal for Amanu Properties",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function AdminLayout({
