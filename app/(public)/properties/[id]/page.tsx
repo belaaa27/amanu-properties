@@ -13,6 +13,7 @@ import {
 import { getPublicPropertyByIdOrSlug } from "@/lib/public-properties";
 import PropertyGallery from "@/components/public/PropertyGallery";
 import PublicEnquiryForm from "@/components/public/PublicEnquiryForm";
+import type { Metadata } from "next";
 
 const CATEGORY_LABELS: Record<string, string> = {
   HOUSE: "House",
@@ -40,19 +41,57 @@ export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
-}) {
+}): Promise<Metadata> {
   const { id } = await params;
   const property = await getPublicPropertyByIdOrSlug(id);
 
   if (!property) {
     return {
-      title: "Property Not Found | Amanu Properties",
+      title: "Property Not Found",
+      description:
+        "The requested property listing is unavailable or no longer listed on Amanu Properties.",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
+  const canonicalPath = `/properties/${encodeURIComponent(property.slug.trim())}`;
+  const description = `${CATEGORY_LABELS[property.category] || property.category} for sale in ${property.neighbourhood}, ${property.subCity}, Addis Ababa — ${property.formattedTotalPrice}.`;
+  const primaryImage = property.images[0];
+  const socialTitle = `${property.title} | Amanu Properties`;
+
   return {
-    title: `${property.title} | Amanu Properties`,
-    description: `${CATEGORY_LABELS[property.category] || property.category} for sale in ${property.neighbourhood}, ${property.subCity}, Addis Ababa — ${property.formattedTotalPrice}.`,
+    title: property.title,
+    description,
+    alternates: {
+      canonical: canonicalPath,
+    },
+    openGraph: {
+      type: "website",
+      siteName: "Amanu Properties",
+      locale: "en_ET",
+      url: canonicalPath,
+      title: socialTitle,
+      description,
+      ...(primaryImage
+        ? {
+            images: [
+              {
+                url: primaryImage.url,
+                alt: primaryImage.altText || property.title,
+              },
+            ],
+          }
+        : {}),
+    },
+    twitter: {
+      card: primaryImage ? "summary_large_image" : "summary",
+      title: socialTitle,
+      description,
+      ...(primaryImage ? { images: [primaryImage.url] } : {}),
+    },
   };
 }
 

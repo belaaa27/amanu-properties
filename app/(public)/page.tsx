@@ -13,12 +13,34 @@ import {
   getFeaturedPublicProperties,
 } from "@/lib/public-properties";
 import PropertyCard from "@/components/public/PropertyCard";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title:
-    "Amanu Properties | Residential & Commercial Property Sales in Addis Ababa",
-  description:
-    "Discover houses, apartments, villas, and commercial properties for sale in Addis Ababa with transparent ETB pricing and direct viewing arrangements.",
+const homeTitle =
+  "Amanu Properties | Residential & Commercial Property Sales in Addis Ababa";
+const homeDescription =
+  "Discover houses, apartments, villas, and commercial properties for sale in Addis Ababa with transparent ETB pricing and direct viewing arrangements.";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: homeTitle,
+  },
+  description: homeDescription,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Amanu Properties",
+    locale: "en_ET",
+    url: "/",
+    title: homeTitle,
+    description: homeDescription,
+  },
+  twitter: {
+    card: "summary",
+    title: homeTitle,
+    description: homeDescription,
+  },
 };
 
 export default async function HomePage() {
@@ -369,9 +391,11 @@ export default async function HomePage() {
                 A Personal Approach to Buying Property in Addis Ababa
               </h2>
               <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-                Amanu Properties helps people explore property opportunities in
-                Addis Ababa, from family homes and apartments to villas and
-                commercial properties.
+                Amanu Properties is an independent property sales platform
+                operated by Amanuel. Whether you are searching for a family
+                residence, an apartment, a villa, or a commercial space, every
+                listing is curated for clear specifications, honest pricing in
+                ETB, and straightforward viewing arrangements.
               </p>
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 <Link

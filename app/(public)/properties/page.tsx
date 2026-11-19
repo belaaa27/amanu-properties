@@ -13,11 +13,31 @@ import {
   type PublicPropertyFilterParams,
 } from "@/lib/public-properties";
 import PropertyCard from "@/components/public/PropertyCard";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Properties for Sale in Addis Ababa | Amanu Properties",
-  description:
-    "Browse houses, apartments, villas, and commercial properties for sale in Addis Ababa. Filter by sub-city, neighbourhood, price in ETB, bedrooms, and area.",
+const propertiesTitle = "Properties for Sale in Addis Ababa";
+const propertiesDescription =
+  "Browse houses, apartments, villas, and commercial properties for sale in Addis Ababa. Filter by sub-city, neighbourhood, price in ETB, bedrooms, and area.";
+
+export const metadata: Metadata = {
+  title: propertiesTitle,
+  description: propertiesDescription,
+  alternates: {
+    canonical: "/properties",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Amanu Properties",
+    locale: "en_ET",
+    url: "/properties",
+    title: `${propertiesTitle} | Amanu Properties`,
+    description: propertiesDescription,
+  },
+  twitter: {
+    card: "summary",
+    title: `${propertiesTitle} | Amanu Properties`,
+    description: propertiesDescription,
+  },
 };
 
 export default async function PublicPropertiesPage({

@@ -6,12 +6,34 @@ import {
   ArrowRight,
   UserCheck,
 } from "lucide-react";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title:
-    "About Amanu Properties | Independent Real Estate Sales in Addis Ababa",
-  description:
-    "Learn about Amanu Properties, an independent property discovery and sales business operated by Amanuel in Addis Ababa, Ethiopia.",
+const aboutTitle =
+  "About Amanu Properties | Independent Real Estate Sales in Addis Ababa";
+const aboutDescription =
+  "Learn about Amanu Properties, an independent property discovery and sales business operated by Amanuel in Addis Ababa, Ethiopia.";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: aboutTitle,
+  },
+  description: aboutDescription,
+  alternates: {
+    canonical: "/about",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Amanu Properties",
+    locale: "en_ET",
+    url: "/about",
+    title: aboutTitle,
+    description: aboutDescription,
+  },
+  twitter: {
+    card: "summary",
+    title: aboutTitle,
+    description: aboutDescription,
+  },
 };
 
 export default function AboutPage() {
@@ -46,62 +68,57 @@ export default function AboutPage() {
               Focused Exclusively on Property Sales in Addis Ababa
             </h2>
             <p className="text-sm sm:text-base text-slate-700 leading-relaxed">
-              Amanu Properties makes discovering and enquiring about residential
-              and commercial properties in Addis Ababa simpler and more
-              transparent. We present selected property opportunities, including
-              houses, apartments, villas, and commercial spaces.
+              Amanu Properties was created to make discovering and enquiring
+              about residential and commercial properties in Addis Ababa
+              straightforward and transparent. Rather than operating as an
+              impersonal mass-market portal, the platform focuses on curated
+              property sales across houses, apartments, villas, and commercial
+              spaces.
             </p>
-
             <p className="text-sm sm:text-base text-slate-700 leading-relaxed">
-              Each listing provides essential property details, asking prices in
-              Ethiopian Birr (ETB), and neighbourhood information to help
-              prospective buyers explore their options and arrange viewings.
+              Every listing is presented with clear specifications, Ethiopian
+              Birr (ETB) asking prices, and sub-city/neighbourhood context so
+              prospective buyers can evaluate options before scheduling an
+              in-person viewing.
             </p>
 
-            {/* Personal Introduction Card */}
+            {/* Personal Introduction Card (Clearly labeled DEMO where unverified) */}
             <div className="p-5 sm:p-6 rounded-xl bg-white border border-slate-200 shadow-xs space-y-3 mt-4">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-lg bg-navy-900 text-gold-400">
-                  <UserCheck className="w-5 h-5" />
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-lg bg-navy-900 text-gold-400">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif text-lg font-bold text-navy-900">
+                      Amanuel
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Founder &amp; Operator, Amanu Properties
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-serif text-lg font-bold text-navy-900">
-                    Ammanuel Teferra
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Founder &amp; Property Professional | Amanu Properties
-                  </p>
-                </div>
+                <span className="px-2.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold uppercase tracking-wider">
+                  DEMO Profile
+                </span>
               </div>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                Ammanuel Tefera holds a Bachelor of Science degree in Computer
-                Science from Arsi University. His professional background
-                combines technology support, communication, problem-solving, and
-                exposure to real estate sales and marketing.
+
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                [DEMO Placeholder — Personal biography, background details, and
+                verified contact credentials for Amanuel will be updated
+                directly by the business owner.]
               </p>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                His experience includes an ICT internship at Arsi University,
-                volunteer service as a System Administration Assistant at
-                Rehoboth General Hospital, and work as a Liaison Officer at
-                Metropolitan Real Estate.
-              </p>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                Bringing together his technical knowledge and professional
-                experience, Ammanuel aims to make property discovery and
-                enquiries through Amanu Properties straightforward, informative,
-                and professional.
-              </p>{" "}
             </div>
           </div>
 
           {/* Architectural Photo */}
           <div className="lg:col-span-6">
-            <div className="aspect-[4/5] max-w-lg mx-auto rounded-xl overflow-hidden border border-slate-200 shadow-md bg-slate-100">
+            <div className="aspect-[4/3] rounded-xl overflow-hidden border border-slate-200 shadow-md bg-slate-100">
               <img
-                src="/images/ammanuel-tefera.jpg"
-                alt="Ammanuel Tefera"
+                src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1400&q=80"
+                alt="Contemporary residential architecture"
                 loading="lazy"
-                className="w-full h-full object-cover object-top"
+                className="w-full h-full object-cover"
               />
             </div>
           </div>

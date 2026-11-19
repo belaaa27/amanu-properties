@@ -11,11 +11,31 @@ import {
 } from "lucide-react";
 
 import PublicEnquiryForm from "@/components/public/PublicEnquiryForm";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Contact & Property Enquiries | Amanu Properties",
-  description:
-    "Contact Amanu Properties for residential and commercial property enquiries and viewing requests in Addis Ababa, Ethiopia.",
+const contactTitle = "Contact & Property Enquiries";
+const contactDescription =
+  "Send a property sales enquiry or request a viewing in Addis Ababa with Amanu Properties.";
+
+export const metadata: Metadata = {
+  title: contactTitle,
+  description: contactDescription,
+  alternates: {
+    canonical: "/contact",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Amanu Properties",
+    locale: "en_ET",
+    url: "/contact",
+    title: `${contactTitle} | Amanu Properties`,
+    description: contactDescription,
+  },
+  twitter: {
+    card: "summary",
+    title: `${contactTitle} | Amanu Properties`,
+    description: contactDescription,
+  },
 };
 
 export default function ContactPage() {

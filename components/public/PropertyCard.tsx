@@ -37,12 +37,13 @@ export default function PropertyCard({
   property: PublicPropertyCardData;
 }) {
   const statusBadge = STATUS_CONFIG[property.status] || STATUS_CONFIG.AVAILABLE;
+  const propertyHref = `/properties/${encodeURIComponent(property.slug.trim())}`;
 
   return (
     <article className="group bg-white rounded-none sm:rounded-sm border border-slate-200/90 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden">
       {/* Property Photograph */}
       <Link
-        href={`/properties/${property.id}`}
+        href={propertyHref}
         className="relative aspect-[16/10] w-full bg-slate-100 overflow-hidden block"
       >
         {property.primaryImage ? (
@@ -78,7 +79,7 @@ export default function PropertyCard({
       <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
         <div>
           <Link
-            href={`/properties/${property.id}`}
+            href={propertyHref}
             className="block font-serif text-lg font-semibold text-navy-900 group-hover:text-gold-600 transition-colors line-clamp-1"
           >
             {property.title}
@@ -145,7 +146,7 @@ export default function PropertyCard({
             </div>
 
             <Link
-              href={`/properties/${property.id}`}
+              href={propertyHref}
               className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-navy-900 hover:text-gold-600 transition-colors shrink-0"
             >
               <span>View Details</span>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,10 +13,31 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = getSiteUrl();
+
 export const metadata: Metadata = {
-  title: "Amanu Properties | Real Estate Addis Ababa",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Amanu Properties | Real Estate Sales in Addis Ababa",
+    template: "%s | Amanu Properties",
+  },
   description:
-    "Exclusive property listings and sales discovery platform in Addis Ababa, Ethiopia.",
+    "Real estate discovery and property sales platform in Addis Ababa, Ethiopia.",
+  openGraph: {
+    type: "website",
+    siteName: "Amanu Properties",
+    locale: "en_ET",
+    url: siteUrl,
+    title: "Amanu Properties | Real Estate Sales in Addis Ababa",
+    description:
+      "Real estate discovery and property sales platform in Addis Ababa, Ethiopia.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Amanu Properties | Real Estate Sales in Addis Ababa",
+    description:
+      "Real estate discovery and property sales platform in Addis Ababa, Ethiopia.",
+  },
 };
 
 export default function RootLayout({
