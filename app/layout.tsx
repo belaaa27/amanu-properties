@@ -18,6 +18,11 @@ const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+
+  verification: {
+    google: "YGevW20-tbHTL8M3w-GiNEMrgTClqT3ArQ9t5TzDRA8",
+  },
+
   title: {
     default: "Amanu Properties | Real Estate Sales in Addis Ababa",
     template: "%s | Amanu Properties",
