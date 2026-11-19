@@ -11,6 +11,8 @@ import {
   Tag,
 } from "lucide-react";
 import { getPublicPropertyByIdOrSlug } from "@/lib/public-properties";
+import { getSiteUrl } from "@/lib/site";
+import JsonLd from "@/components/seo/JsonLd";
 import PropertyGallery from "@/components/public/PropertyGallery";
 import PublicEnquiryForm from "@/components/public/PublicEnquiryForm";
 import type { Metadata } from "next";
@@ -108,10 +110,39 @@ export default async function PublicPropertyDetailsPage({
     notFound();
   }
 
+  const siteUrl = getSiteUrl();
+  const canonicalPropertyUrl = `${siteUrl}/properties/${encodeURIComponent(property.slug.trim())}`;
   const statusInfo = STATUS_LABELS[property.status] || STATUS_LABELS.AVAILABLE;
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: `${siteUrl}/`,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Properties",
+        item: `${siteUrl}/properties`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: property.title,
+        item: canonicalPropertyUrl,
+      },
+    ],
+  };
 
   return (
     <div className="pb-16">
+      <JsonLd data={breadcrumbJsonLd} />
+
       {/* Top Breadcrumb & Title Header */}
       <section className="bg-navy-950 text-white py-10 sm:py-12 border-b border-gold-500/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">

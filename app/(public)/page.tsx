@@ -12,6 +12,8 @@ import {
   ADDIS_SUB_CITIES,
   getFeaturedPublicProperties,
 } from "@/lib/public-properties";
+import { getSiteUrl } from "@/lib/site";
+import JsonLd from "@/components/seo/JsonLd";
 import PropertyCard from "@/components/public/PropertyCard";
 import type { Metadata } from "next";
 
@@ -45,9 +47,25 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const featuredProperties = await getFeaturedPublicProperties();
+  const siteUrl = getSiteUrl();
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: `${siteUrl}/`,
+      },
+    ],
+  };
 
   return (
     <div>
+      <JsonLd data={breadcrumbJsonLd} />
+
       {/* HERO SECTION (Inspired by Harmony Real Estate visual composition) */}
       <section className="relative bg-navy-950 text-white overflow-hidden">
         {/* Authentic Architectural / Residence Photography with Deep Navy Overlay */}

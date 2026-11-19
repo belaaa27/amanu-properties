@@ -12,6 +12,8 @@ import {
   searchPublicProperties,
   type PublicPropertyFilterParams,
 } from "@/lib/public-properties";
+import { getSiteUrl } from "@/lib/site";
+import JsonLd from "@/components/seo/JsonLd";
 import PropertyCard from "@/components/public/PropertyCard";
 import type { Metadata } from "next";
 
@@ -48,6 +50,26 @@ export default async function PublicPropertiesPage({
   const params = await searchParams;
   const { items, totalCount, currentPage, totalPages } =
     await searchPublicProperties(params, 9);
+  const siteUrl = getSiteUrl();
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: `${siteUrl}/`,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Properties",
+        item: `${siteUrl}/properties`,
+      },
+    ],
+  };
 
   const hasActiveFilters = Boolean(
     params.q ||
@@ -76,6 +98,8 @@ export default async function PublicPropertiesPage({
 
   return (
     <div className="pb-16">
+      <JsonLd data={breadcrumbJsonLd} />
+
       {/* Page Banner */}
       <section className="bg-navy-950 text-white py-12 sm:py-16 border-b border-gold-500/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

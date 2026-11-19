@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { getSiteUrl } from "@/lib/site";
+import JsonLd from "@/components/seo/JsonLd";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -40,6 +41,19 @@ export const metadata: Metadata = {
   },
 };
 
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Amanu Properties",
+  url: siteUrl,
+  inLanguage: "en",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${siteUrl}/properties?q={search_term_string}`,
+    "query-input": "required name=search_term_string",
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -51,6 +65,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-ivory text-navy-900">
+        <JsonLd data={websiteJsonLd} />
         {children}
       </body>
     </html>

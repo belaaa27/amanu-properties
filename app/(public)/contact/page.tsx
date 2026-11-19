@@ -10,6 +10,9 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
+import { getSiteUrl } from "@/lib/site";
+import JsonLd from "@/components/seo/JsonLd";
+
 import PublicEnquiryForm from "@/components/public/PublicEnquiryForm";
 import type { Metadata } from "next";
 
@@ -39,8 +42,31 @@ export const metadata: Metadata = {
 };
 
 export default function ContactPage() {
+  const siteUrl = getSiteUrl();
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: `${siteUrl}/`,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Contact",
+        item: `${siteUrl}/contact`,
+      },
+    ],
+  };
+
   return (
     <div className="pb-16">
+      <JsonLd data={breadcrumbJsonLd} />
+
       {/* Header Banner */}
       <section className="bg-navy-950 text-white py-14 sm:py-16 border-b border-gold-500/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
